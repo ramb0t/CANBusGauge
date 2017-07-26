@@ -1,15 +1,15 @@
 
 /*************************************************************
  * Modified by Rambo.co.za 25/7/17. Changed to STM32Duino support using BluePill
- * http://www.instructables.com/id/Arduino-serial-UART-scrolling-display-terminal-usi/
-  This sketch implements a simple serial receive terminal
-  program for monitoring serial debug messages from another
+ * http://www.instructables.com/id/Arduino-Serial1-UART-scrolling-display-terminal-usi/
+  This sketch implements a simple Serial1 receive terminal
+  program for monitoring Serial1 debug messages from another
   board.
   
   Connect GND to target board GND
   Connect RX line to TX line of target board
   Make sure the target and terminal have the same baud rate
-  and serial stettings!
+  and Serial1 stettings!
 
   The sketch works with the ILI9341 TFT 240x320 display and
   the called up libraries.
@@ -25,11 +25,11 @@
  *************************************************************/
 
 // In most cases characters don't get lost at 9600 baud but
-// it is a good idea to increase the serial Rx buffer from 64
+// it is a good idea to increase the Serial1 Rx buffer from 64
 // to 512 or 1024 bytes especially if higher baud rates are
 // used (this sketch does not need much RAM).
 // The method described here works well:
-// http://www.hobbytronics.co.uk/arduino-serial-buffer-size
+// http://www.hobbytronics.co.uk/arduino-Serial1-buffer-size
 //
 
 #include <Adafruit_GFX_AS.h>     // Core graphics library
@@ -71,7 +71,7 @@ uint16_t yDraw = 320 - BOT_FIXED_AREA - TEXT_HEIGHT;
 
 // Keep track of the drawing x coordinate
 uint16_t xPos = 0;
-// For the byte we read from the serial port
+// For the byte we read from the Serial1 port
 byte data = 0;
 
 // A few test varaibles used during debugging
@@ -79,7 +79,7 @@ boolean change_colour = 1;
 boolean selected = 1;
 
 // We have to blank the top line each time the display is scrolled, but this takes up to 13 milliseconds
-// for a full width line, meanwhile the serial buffer may be filling... and overflowing
+// for a full width line, meanwhile the Serial1 buffer may be filling... and overflowing
 // We can speed up scrolling of short text lines by just blanking the character we drew
 int blank[19]; // We keep all the strings pixel lengths to optimise the speed of the top line blanking
 
@@ -92,10 +92,10 @@ void setup() {
   setupScrollArea(TOP_FIXED_AREA, BOT_FIXED_AREA);
   
   // Setup baud rate and draw top banner
-  Serial.begin(9600);
+  Serial1.begin(9600);
   tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
   tft.fillRect(0,0,240,16, ILI9341_BLUE);
-  tft.drawCentreString(" Serial Terminal - 9600 baud ",120,0,2);
+  tft.drawCentreString(" Serial1 Terminal - 9600 baud ",120,0,2);
 
   // Change colour for scrolling zone
   tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
@@ -106,7 +106,7 @@ void setup() {
 
 
 void loop(void) {
-  //  These lines change the text colour when the serial buffer is emptied
+  //  These lines change the text colour when the Serial1 buffer is emptied
   //  These are test lines to see if we may be losing characters
   //  Also uncomment the change_colour line below to try them
   //
@@ -116,8 +116,8 @@ void loop(void) {
   //  else {tft.setTextColor(ILI9341_MAGENTA, ILI9341_BLACK); selected = 1;}
   //}
   
-  while (Serial.available()) {
-    data = Serial.read();
+  while (Serial1.available()) {
+    data = Serial1.read();
     if (data == '\r' || xPos>231) {
       xPos = 0;
       yDraw = scroll_line(); // It takes about 13ms to scroll 16 pixel lines
