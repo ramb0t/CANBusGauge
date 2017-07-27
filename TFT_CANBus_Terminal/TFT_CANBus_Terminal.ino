@@ -258,15 +258,26 @@ void ProcessMessages(void)
 void SendCANmessages(void)
 {
   Serial1.println("Sending CAN Messages.. ");
-  // Prepare Gyroscope frame : send angular rate
-  msgGyroscope.Data[0] = AngularRate & 0xff ;
-  msgGyroscope.Data[1] = ( AngularRate >> 8 ) & 0xff ;
-  msgGyroscope.Data[2] = ErreurGyroscope ? 1 : 0 ;
-  CANsend(&msgGyroscope) ;      // Send this frame
+  CanMsg message;
+  //float engine_data;
+  //int timeout = 0;
+  //char message_ok = 0;
+  // Prepair message
+  //message.id = PID_REQUEST;
+  message.IDE = CAN_ID_STD;          // Indicates a standard identifier ; CAN_ID_EXT would mean this frame uses an extended identifier
+  message.RTR = CAN_RTR_DATA;        // Indicated this is a data frame, as opposed to a remote frame (would then be CAN_RTR_REMOTE)
+  message.ID = 0x7DF;
+  message.DLC = 8;                   // Number of data bytes to follow  
+  message.Data[0] = 0x02;
+  message.Data[1] = 0x01;
+  message.Data[2] = 0x0C;  //RPM
+  message.Data[3] = 0x00;
+  message.Data[4] = 0x00;
+  message.Data[5] = 0x00;
+  message.Data[6] = 0x00;
+  message.Data[7] = 0x00; 
+  CANsend(&message) ;      // Send this frame
   
-  msgMotorControl.Data[0] = Throttle & 0xff ;
-  msgMotorControl.Data[1] = ( Throttle >> 8 ) & 0xff ;
-  CANsend(&msgMotorControl) ;
 }
 
 void setup() {
@@ -322,7 +333,7 @@ void loop(void) {
   if ( CANsendDivider < 0 )
   {
     CANsendDivider = CAN_SEND_RATE / CAN_DELAY ;
-    //SendCANmessages() ;       
+    SendCANmessages() ;       
   }
   delay(CAN_DELAY) ;    // The delay must not be greater than the time to overflow the incoming fifo (here about 15 ms)
   
