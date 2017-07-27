@@ -67,7 +67,17 @@
 // Limit time to flag a CAN error
 #define CAN_TIMEOUT 100           
 #define CAN_DELAY 10        // ms between two processings of incoming messages
-#define CAN_SEND_RATE 200   // ms between two successive sendings
+#define CAN_SEND_RATE 500   // ms between two successive sendings
+
+#define ENGINE_COOLANT_TEMP 0x05
+#define ENGINE_RPM          0x0C
+#define VEHICLE_SPEED       0x0D
+#define MAF_SENSOR          0x10
+#define O2_VOLTAGE          0x14
+#define THROTTLE      0x11
+
+#define PID_REQUEST         0x7DF
+#define PID_REPLY     0x7E8
 
 
 // Must use hardware SPI for speed
@@ -196,33 +206,33 @@ void ProcessMessages(void)
     CANError = false ;              // Clear CAN silence error
 
     // Print to serial
-    Serial1.print("ID: ");
+    Serial1.println("ID: ");
     Serial1.print(r_msg->ID,HEX);
-    Serial1.print(", ");
-    Serial1.print("Data: ");
-    //Serial1.print((int)r_msg->Data.length,DEC);
-    for(int i=0;i<7;i++) 
-     {  
-       Serial1.print(r_msg->Data[i],HEX);
-       Serial1.print(" ");
-     }
-    Serial1.println("");
+//    Serial1.print(", ");
+//    Serial1.print("Data: ");
+//    //Serial1.print((int)r_msg->Data.length,DEC);
+//    for(int i=0;i<7;i++) 
+//     {  
+//       Serial1.print(r_msg->Data[i],HEX);
+//       Serial1.print(" ");
+//     }
+//    Serial1.println("");
 
     // Print to TFT
     
-    xPos = 0;
-    yDraw = scroll_line(); // It takes about 13ms to scroll 16 pixel lines
-    tft.setCursor(xPos, yDraw);
-    tft.print("ID: ");
-    tft.print(r_msg->ID,HEX);
-    tft.print(", ");
-    tft.print("Data: ");
-    //Serial1.print((int)r_msg->Data.length,DEC);
-    for(int i=0;i<7;i++) 
-     {  
-       tft.print(r_msg->Data[i],HEX);
-       tft.print(" ");
-     }
+//    xPos = 0;
+//    yDraw = scroll_line(); // It takes about 13ms to scroll 16 pixel lines
+//    tft.setCursor(xPos, yDraw);
+//    tft.print("ID: ");
+//    tft.print(r_msg->ID,HEX);
+//    tft.print(", ");
+//    tft.print("Data: ");
+//    //Serial1.print((int)r_msg->Data.length,DEC);
+//    for(int i=0;i<8;i++) 
+//     {  
+//       tft.print(r_msg->Data[i],HEX);
+//       tft.print(" ");
+//     }
     
     switch ( r_msg->ID )
     {
@@ -241,6 +251,22 @@ void ProcessMessages(void)
         JoystickY = Pr ;
         break ;
 
+      case PID_REPLY :
+            xPos = 0;
+            yDraw = scroll_line(); // It takes about 13ms to scroll 16 pixel lines
+            tft.setCursor(xPos, yDraw);
+            tft.print("ID: ");
+            tft.print(r_msg->ID,HEX);
+            tft.print(", ");
+            tft.print("Data: ");
+            //Serial1.print((int)r_msg->Data.length,DEC);
+            for(int i=0;i<8;i++) 
+             {  
+               tft.print(r_msg->Data[i],HEX);
+               tft.print(" ");
+             }
+        break;
+
       default :                     // Any frame with a different identifier is ignored
         break ;
     }
@@ -257,7 +283,7 @@ void ProcessMessages(void)
 // Sending all frames at once is a choice; they could be sent separately, at different times and rates.
 void SendCANmessages(void)
 {
-  Serial1.println("Sending CAN Messages.. ");
+  //Serial1.println("Sending CAN Messages.. ");
   CanMsg message;
   //float engine_data;
   //int timeout = 0;
@@ -289,13 +315,13 @@ void setup() {
   setupScrollArea(TOP_FIXED_AREA, BOT_FIXED_AREA);
   
   // Setup baud rate and draw top banner
-  Serial1.begin(9600);
+  Serial1.begin(115200);
   Serial1.println("Starting Up!"); 
   // put your setup code here, to run once:
   CANSetup() ;        // Initialize the CAN module and prepare the message structures.
   tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
   tft.fillRect(0,0,240,16, ILI9341_BLUE);
-  tft.drawCentreString(" Serial1 Terminal - 9600 baud ",120,0,2);
+  tft.drawCentreString(" Serial1 Terminal - 115200 baud ",120,0,2);
 
   // Change colour for scrolling zone
   tft.setTextColor(ILI9341_WHITE, ILI9341_BLACK);
