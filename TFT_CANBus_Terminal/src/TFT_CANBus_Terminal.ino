@@ -1,3 +1,6 @@
+#include <Arduino.h>
+#include "rcc.h"
+
 
 /*************************************************************
  * Modified by Rambo.co.za 25/7/17. Changed to STM32Duino support using BluePill
@@ -5,7 +8,7 @@
   This sketch implements a simple Serial1 receive terminal
   program for monitoring Serial1 debug messages from another
   board.
-  
+
   Connect GND to target board GND
   Connect RX line to TX line of target board
   Make sure the target and terminal have the same baud rate
@@ -13,13 +16,13 @@
 
   The sketch works with the ILI9341 TFT 240x320 display and
   the called up libraries.
-  
+
   The sketch uses the hardware scrolling feature of the
   display. Modification of this sketch may lead to problems
   unless the ILI9341 data sheet has been understood!
 
   Written by Alan Senior 15th February 2015
-  
+
   BSD license applies, all text above must be included in any
   redistribution
  *************************************************************/
@@ -65,7 +68,7 @@
 #define MOTOR_CONTROL_ID 0x92
 
 // Limit time to flag a CAN error
-#define CAN_TIMEOUT 100           
+#define CAN_TIMEOUT 100
 #define CAN_DELAY 10        // ms between two processings of incoming messages
 #define CAN_SEND_RATE 100   // ms between two successive sendings
 
@@ -100,7 +103,7 @@ uint16_t xPos = 0;
 // For the byte we read from the Serial1 port
 byte data = 0;
 // track the message number
-byte mno = 0; 
+byte mno = 0;
 
 // A few test varaibles used during debugging
 boolean change_colour = 1;
@@ -124,7 +127,7 @@ int AngularRate ;           // Output of local gyroscope
 int Throttle  ;             // Motor control value, produced by some local processing
 bool ErreurGyroscope = false ;
 
-// Message structures. Each message has its own identifier. As many such variables should be defined 
+// Message structures. Each message has its own identifier. As many such variables should be defined
 // as the number of different CAN frames the application has to send. Here, they are two.
 CanMsg msgGyroscope ;
 CanMsg msgMotorControl ;
@@ -148,7 +151,7 @@ void CANSetup(void)
   msgGyroscope.Data[0] = 0x0;             // Data bytes, there can be 0 to 8 bytes.
   msgGyroscope.Data[1] = 0x0;
   msgGyroscope.Data[2] = 0x0;
-  
+
   msgMotorControl.IDE = CAN_ID_STD;
   msgMotorControl.RTR = CAN_RTR_DATA;
   msgMotorControl.ID = MOTOR_CONTROL_ID ;
@@ -164,13 +167,13 @@ void CANSetup(void)
 
   canBus.filter(0, 0, 0);
   canBus.set_irq_mode();              // Use irq mode (recommended), so the handling of incoming messages
-                                      // will be performed at ease in a task or in the loop. The software fifo is 16 cells long, 
+                                      // will be performed at ease in a task or in the loop. The software fifo is 16 cells long,
                                       // allowing at least 15 ms before processing the fifo is needed at 125 kbps
   Stat = canBus.status();
   if (Stat != CAN_OK)
      Serial1.println("CAN Init failed :(") ;   // Initialization failed
   else
-     Serial1.println("CAN Init success! :D");   
+     Serial1.println("CAN Init success! :D");
 }
 
 // Send one frame. Parameter is a pointer to a frame structure (above), that has previously been updated with data.
@@ -179,7 +182,7 @@ CAN_TX_MBX CANsend(CanMsg *pmsg)
 {
   CAN_TX_MBX mbx;
 
-  do 
+  do
   {
     mbx = canBus.send(pmsg) ;
 #ifdef USE_MULTITASK
@@ -198,7 +201,7 @@ void ProcessMessages(void)
   //Serial1.println("Processing CAN messages");
   int Pr = 0 ;
   int i ;
-  
+
   CanMsg *r_msg;
 
   // Loop for every message in the fifo
@@ -213,15 +216,15 @@ void ProcessMessages(void)
 //    Serial1.print(", ");
 //    Serial1.print("Data: ");
 //    //Serial1.print((int)r_msg->Data.length,DEC);
-//    for(int i=0;i<7;i++) 
-//     {  
+//    for(int i=0;i<7;i++)
+//     {
 //       Serial1.print(r_msg->Data[i],HEX);
 //       Serial1.print(" ");
 //     }
 //    Serial1.println("");
 
     // Print to TFT
-    
+
     xPos = 0;
     yDraw = scroll_line(); // It takes about 13ms to scroll 16 pixel lines
     tft.setCursor(xPos, yDraw);
@@ -232,24 +235,24 @@ void ProcessMessages(void)
     tft.print(", ");
     tft.print("Data: ");
     //Serial1.print((int)r_msg->Data.length,DEC);
-    for(int i=0;i<8;i++) 
-     {  
+    for(int i=0;i<8;i++)
+     {
        tft.print(r_msg->Data[i],HEX);
        tft.print(" ");
      }
-    
+
     switch ( r_msg->ID )
     {
 //      case TANK_LEVEL_ID :                  // This frame contains four 16-bit words, little endian coded
 //        for ( i = 0 ; i < 4 ; i++ )
 //          Contents[i] = (int)r_msg->Data[2*i] | ((int)r_msg->Data[(2*i)+1]) << 8 ;
 //        break ;
-//    
+//
 //      case JOYSTICK_VALUES_ID :             // This frame contains two 16-bit words, little endian coded
 //        Pr = (int)r_msg->Data[0] ;
 //        Pr |= (int)r_msg->Data[1] << 8 ;
 //        JoystickX = Pr ;
-//        
+//
 //        Pr = (int)r_msg->Data[2] ;
 //        Pr |= (int)r_msg->Data[3] << 8 ;
 //        JoystickY = Pr ;
@@ -267,8 +270,8 @@ void ProcessMessages(void)
 //              tft.print(", ");
 //              tft.print("Data: ");
 //              //Serial1.print((int)r_msg->Data.length,DEC);
-//              for(int i=0;i<8;i++) 
-//               {  
+//              for(int i=0;i<8;i++)
+//               {
 //                 tft.print(r_msg->Data[i],HEX);
 //                 tft.print(" ");
 //               }
@@ -278,7 +281,7 @@ void ProcessMessages(void)
       default :                     // Any frame with a different identifier is ignored
         break ;
     }
-    
+
     canBus.free();                          // Remove processed message from buffer, whatever the identifier
 #ifdef USE_MULTITASK
     vTaskDelay( 1 ) ;                       // Infinite loops are not multitasking-friendly
@@ -301,7 +304,7 @@ void SendCANmessages(void)
   message.IDE = CAN_ID_STD;          // Indicates a standard identifier ; CAN_ID_EXT would mean this frame uses an extended identifier
   message.RTR = CAN_RTR_DATA;        // Indicated this is a data frame, as opposed to a remote frame (would then be CAN_RTR_REMOTE)
   message.ID = 0x7DF;
-  message.DLC = 8;                   // Number of data bytes to follow  
+  message.DLC = 8;                   // Number of data bytes to follow
   message.Data[0] = 0x02;
   message.Data[1] = 0x01;
   message.Data[2] = 0x0C;  //RPM
@@ -309,9 +312,9 @@ void SendCANmessages(void)
   message.Data[4] = 0x00;
   message.Data[5] = 0x00;
   message.Data[6] = 0x00;
-  message.Data[7] = 0x00; 
+  message.Data[7] = 0x00;
   CANsend(&message) ;      // Send this frame
-  
+
 }
 
 void setup() {
@@ -321,10 +324,10 @@ void setup() {
   tft.fillScreen(ILI9341_BLACK);
   // Setup scroll area
   setupScrollArea(TOP_FIXED_AREA, BOT_FIXED_AREA);
-  
+
   // Setup baud rate and draw top banner
   Serial1.begin(115200);
-  Serial1.println("Starting Up!"); 
+  Serial1.println("Starting Up!");
   // put your setup code here, to run once:
   CANSetup() ;        // Initialize the CAN module and prepare the message structures.
   tft.setTextColor(ILI9341_WHITE, ILI9341_BLUE);
@@ -353,9 +356,9 @@ void loop(void) {
   // Process incoming messages periodically (should be often enough to avoid overflowing the fifo)
   ProcessMessages() ;          // Process all incoming messages, update local variables accordingly
 
-  // This is an example of timeout management. Here it is global to all received frames; 
+  // This is an example of timeout management. Here it is global to all received frames;
   // it could be on a frame by frame basis, with as many control variables as the number of frames.
-  CANquietTime++ ; 
+  CANquietTime++ ;
   if ( CANquietTime > CAN_TIMEOUT )
   {
     CANquietTime = CAN_TIMEOUT + 1 ;            // To prevent overflowing this variable if silence prolongs...
@@ -367,10 +370,10 @@ void loop(void) {
   if ( CANsendDivider < 0 )
   {
     CANsendDivider = CAN_SEND_RATE / CAN_DELAY ;
-    SendCANmessages() ;       
+    SendCANmessages() ;
   }
   delay(CAN_DELAY) ;    // The delay must not be greater than the time to overflow the incoming fifo (here about 15 ms)
-  
+
   while (Serial1.available()) {
     data = Serial1.read();
     if (data == '\r' || xPos>231) {
@@ -424,4 +427,3 @@ void scrollAddress(uint16_t VSP) {
   tft.writedata(VSP>>8);
   tft.writedata(VSP);
 }
-
