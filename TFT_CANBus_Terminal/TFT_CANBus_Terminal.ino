@@ -67,7 +67,7 @@
 // Limit time to flag a CAN error
 #define CAN_TIMEOUT 100           
 #define CAN_DELAY 10        // ms between two processings of incoming messages
-#define CAN_SEND_RATE 500   // ms between two successive sendings
+#define CAN_SEND_RATE 100   // ms between two successive sendings
 
 #define ENGINE_COOLANT_TEMP 0x05
 #define ENGINE_RPM          0x0C
@@ -99,6 +99,8 @@ uint16_t yDraw = 320 - BOT_FIXED_AREA - TEXT_HEIGHT;
 uint16_t xPos = 0;
 // For the byte we read from the Serial1 port
 byte data = 0;
+// track the message number
+byte mno = 0; 
 
 // A few test varaibles used during debugging
 boolean change_colour = 1;
@@ -206,8 +208,8 @@ void ProcessMessages(void)
     CANError = false ;              // Clear CAN silence error
 
     // Print to serial
-    Serial1.println("ID: ");
-    Serial1.print(r_msg->ID,HEX);
+    //Serial1.println("ID: ");
+    //Serial1.print(r_msg->ID,HEX);
 //    Serial1.print(", ");
 //    Serial1.print("Data: ");
 //    //Serial1.print((int)r_msg->Data.length,DEC);
@@ -220,52 +222,58 @@ void ProcessMessages(void)
 
     // Print to TFT
     
-//    xPos = 0;
-//    yDraw = scroll_line(); // It takes about 13ms to scroll 16 pixel lines
-//    tft.setCursor(xPos, yDraw);
-//    tft.print("ID: ");
-//    tft.print(r_msg->ID,HEX);
-//    tft.print(", ");
-//    tft.print("Data: ");
-//    //Serial1.print((int)r_msg->Data.length,DEC);
-//    for(int i=0;i<8;i++) 
-//     {  
-//       tft.print(r_msg->Data[i],HEX);
-//       tft.print(" ");
-//     }
+    xPos = 0;
+    yDraw = scroll_line(); // It takes about 13ms to scroll 16 pixel lines
+    tft.setCursor(xPos, yDraw);
+    tft.print(mno);
+    mno++;
+    tft.print("ID: ");
+    tft.print(r_msg->ID,HEX);
+    tft.print(", ");
+    tft.print("Data: ");
+    //Serial1.print((int)r_msg->Data.length,DEC);
+    for(int i=0;i<8;i++) 
+     {  
+       tft.print(r_msg->Data[i],HEX);
+       tft.print(" ");
+     }
     
     switch ( r_msg->ID )
     {
-      case TANK_LEVEL_ID :                  // This frame contains four 16-bit words, little endian coded
-        for ( i = 0 ; i < 4 ; i++ )
-          Contents[i] = (int)r_msg->Data[2*i] | ((int)r_msg->Data[(2*i)+1]) << 8 ;
-        break ;
-    
-      case JOYSTICK_VALUES_ID :             // This frame contains two 16-bit words, little endian coded
-        Pr = (int)r_msg->Data[0] ;
-        Pr |= (int)r_msg->Data[1] << 8 ;
-        JoystickX = Pr ;
-        
-        Pr = (int)r_msg->Data[2] ;
-        Pr |= (int)r_msg->Data[3] << 8 ;
-        JoystickY = Pr ;
-        break ;
+//      case TANK_LEVEL_ID :                  // This frame contains four 16-bit words, little endian coded
+//        for ( i = 0 ; i < 4 ; i++ )
+//          Contents[i] = (int)r_msg->Data[2*i] | ((int)r_msg->Data[(2*i)+1]) << 8 ;
+//        break ;
+//    
+//      case JOYSTICK_VALUES_ID :             // This frame contains two 16-bit words, little endian coded
+//        Pr = (int)r_msg->Data[0] ;
+//        Pr |= (int)r_msg->Data[1] << 8 ;
+//        JoystickX = Pr ;
+//        
+//        Pr = (int)r_msg->Data[2] ;
+//        Pr |= (int)r_msg->Data[3] << 8 ;
+//        JoystickY = Pr ;
+//        break ;
 
-      case PID_REPLY :
-            xPos = 0;
-            yDraw = scroll_line(); // It takes about 13ms to scroll 16 pixel lines
-            tft.setCursor(xPos, yDraw);
-            tft.print("ID: ");
-            tft.print(r_msg->ID,HEX);
-            tft.print(", ");
-            tft.print("Data: ");
-            //Serial1.print((int)r_msg->Data.length,DEC);
-            for(int i=0;i<8;i++) 
-             {  
-               tft.print(r_msg->Data[i],HEX);
-               tft.print(" ");
-             }
-        break;
+//      case PID_REPLY :
+//            if(r_msg->Data[2] == 0x0c){
+//              xPos = 0;
+//              yDraw = scroll_line(); // It takes about 13ms to scroll 16 pixel lines
+//              tft.setCursor(xPos, yDraw);
+//              tft.print(mno);
+//              mno++;
+//              tft.print("ID: ");
+//              tft.print(r_msg->ID,HEX);
+//              tft.print(", ");
+//              tft.print("Data: ");
+//              //Serial1.print((int)r_msg->Data.length,DEC);
+//              for(int i=0;i<8;i++) 
+//               {  
+//                 tft.print(r_msg->Data[i],HEX);
+//                 tft.print(" ");
+//               }
+//            }
+//        break;
 
       default :                     // Any frame with a different identifier is ignored
         break ;
