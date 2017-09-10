@@ -1,5 +1,5 @@
 #include <Arduino.h>
-#include "rcc.h"
+//#include "rcc.h"
 
 
 /*************************************************************
@@ -40,8 +40,10 @@
 #include <SPI.h>
 
 //CAN stuff
+//#include <rcc_f1.h>
+
 #include <HardwareCAN.h>
-#include "changes.h"
+#include "Changes.h"
 
 // These are the pins used for the UNO, we must use hardware SPI
 //#define _sclk 13
