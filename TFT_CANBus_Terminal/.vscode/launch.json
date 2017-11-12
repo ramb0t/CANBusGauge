@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "gdb",
+            "request": "launch",
+            "cwd": "${workspaceRoot}",
+            "name": "PlatformIO Debugger",
+            "target": "e:/Users/RobThePyro/Docs/GitHub/CANBusGauge/TFT_CANBus_Terminal/.pioenvs/bluepill_f103c8/firmware.elf",
+            "gdbpath": "C:/Python27/Scripts/piodebuggdb",
+            "autorun": [ "source .pioinit" ]
+        }
+    ]
+}
