@@ -31,14 +31,14 @@ void setup() {
 }
 
 //********************************Main Loop*********************************//
-
+uint8_t count;
 void loop(){
 
   tCAN message;
 if (mcp2515_check_message())
 	{
     if (mcp2515_get_message(&message))
-	{
+	   {
         //if(message.id == 0x620 and message.data[2] == 0xFF)  //uncomment when you want to filter
              //{
 
@@ -54,6 +54,28 @@ if (mcp2515_check_message())
                 }
                Serial.println("");
              //}
-           }}
+
+        if(message.id == 0x7DF and message.data[2] == 0x0B)  //uncomment when you want to filter
+        {
+          tCAN message0;
+
+          message0.id = 0x7E8; //formatted in HEX
+          message0.header.rtr = 0;
+          message0.header.length = 4; //formatted in DEC
+          message0.data[0] = 0x03;
+          message0.data[1] = 0x41;
+          message0.data[2] = 0x0B;
+          message0.data[3] = count++; //formatted in HEX
+
+          message0.data[4] = 0x00;
+          message0.data[5] = 0x40;
+          message0.data[6] = 0x00;
+          message0.data[7] = 0x00;
+
+          mcp2515_bit_modify(CANCTRL, (1<<REQOP2)|(1<<REQOP1)|(1<<REQOP0), 0);
+          mcp2515_send_message(&message0);
+        }
+      }
+   }
 
 }

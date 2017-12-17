@@ -87,6 +87,11 @@ void graph(uint8_t val){
   tft.fillRect(1      , 31 ,data                , 48, ILI9341_GREEN);
   tft.fillRect(data+1 , 31 ,tft.width()-2-data  , 48, ILI9341_BLACK);
   //Serial.println(data);
+
+  tft.setCursor(120, 2);
+  tft.setTextColor(ILI9341_WHITE,ILI9341_BLACK);
+  tft.print(val);
+  tft.print("  ");
 }
 
 unsigned long testFillScreen() {
