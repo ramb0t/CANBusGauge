@@ -33,14 +33,11 @@
 //Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_RST, TFT_MISO);
 Adafruit_ILI9341_STM tft = Adafruit_ILI9341_STM(TFT_CS, TFT_DC, TFT_RST); // Use hardware SPI
 
+
 void setup() {
   Serial.begin(115200);
   Serial.println("STM32 LCD Backpack ILI9341");
   tft.begin();
-}
-
-
-void loop(void) {
 
   // read diagnostics (optional but can help debug problems)
   uint8_t x = tft.readcommand8(ILI9341_RDMODE);
@@ -54,60 +51,42 @@ void loop(void) {
   x = tft.readcommand8(ILI9341_RDSELFDIAG);
   Serial.print("Self Diagnostic: 0x"); Serial.println(x, HEX);
 
-  Serial.println(F("Benchmark                Time (microseconds)"));
-
-  Serial.print(F("Screen fill              "));
-  Serial.println(testFillScreen());
-
-
-  Serial.print(F("Text                     "));
-  Serial.println(testText());
-
-  Serial.print(F("Lines                    "));
-  Serial.println(testLines(ILI9341_CYAN));
+  tft.fillScreen(ILI9341_BLACK);
+  tft.setRotation(3);
+  tft.setCursor(2, 2);
+  tft.setTextColor(ILI9341_WHITE);  tft.setTextSize(3);
+  tft.println("Boost:");
+  tft.drawRect(0, 30, tft.width(), 50, ILI9341_WHITE);
+}
 
 
-  Serial.print(F("Horiz/Vert Lines         "));
-  Serial.println(testFastLines(ILI9341_RED, ILI9341_BLUE));
-
-
-  Serial.print(F("Rectangles (outline)     "));
-  Serial.println(testRects(ILI9341_GREEN));
-
-
-  Serial.print(F("Rectangles (filled)      "));
-  Serial.println(testFilledRects(ILI9341_YELLOW, ILI9341_MAGENTA));
-
-
-  Serial.print(F("Circles (filled)         "));
-  Serial.println(testFilledCircles(10, ILI9341_MAGENTA));
-
-  Serial.print(F("Circles (outline)        "));
-  Serial.println(testCircles(10, ILI9341_WHITE));
-
-
-  Serial.print(F("Triangles (outline)      "));
-  Serial.println(testTriangles());
-
-
-  Serial.print(F("Triangles (filled)       "));
-  Serial.println(testFilledTriangles());
-
-
-  Serial.print(F("Rounded rects (outline)  "));
-  Serial.println(testRoundRects());
-
-
-  Serial.print(F("Rounded rects (filled)   "));
-  Serial.println(testFilledRoundRects());
-
-
-  Serial.println(F("Done!"));
-
-  for (uint8_t rotation = 0; rotation < 4; rotation++) {
-    tft.setRotation(rotation);
-    testText();
+void loop(void) {
+  uint8_t val_bst;
+  if(Serial.available()){
+    val_bst = Serial.read();
+    graph(val_bst);
   }
+
+
+  // while(1){
+  //   for(int i =0 ; i< 256; i++){
+  //     graph(i);
+  //     //Serial.print(i);
+  //     //Serial.print(", ");
+  //     delay(50);
+  //   }
+  // }
+
+}
+
+void graph(uint8_t val){
+  // map the value into the size needed
+  long data = map(val, 0, 255, 0, tft.width()-2);
+
+  // draw the data
+  tft.fillRect(1      , 31 ,data                , 48, ILI9341_GREEN);
+  tft.fillRect(data+1 , 31 ,tft.width()-2-data  , 48, ILI9341_BLACK);
+  //Serial.println(data);
 }
 
 unsigned long testFillScreen() {
