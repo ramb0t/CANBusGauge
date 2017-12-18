@@ -55,17 +55,23 @@ void setup() {
   tft.setRotation(3);
   tft.setCursor(2, 2);
   tft.setTextColor(ILI9341_WHITE);  tft.setTextSize(3);
-  tft.println("Boost:");
+  tft.println("Bst:");
   tft.drawRect(0, 30, tft.width(), 50, ILI9341_WHITE);
 }
 
+// serial debug circle
 uint8_t status;
+
+// main loop
 void loop(void) {
   uint8_t val_bst;
   if(Serial.available()){
-    status ? status = 0 : status = 1;
+
     val_bst = Serial.read();
-    graph(val_bst);
+    graph_boost(val_bst);
+
+    // serial debug circle
+    status ? status = 0 : status = 1;
     tft.fillCircle(315, 5, 2, status ? ILI9341_WHITE:ILI9341_BLACK);
 
   }
@@ -82,19 +88,49 @@ void loop(void) {
 
 }
 
-void graph(uint8_t val){
+uint8_t peak_MRP;
+uint32_t oldtime;
+void graph_boost(uint8_t val){
   // map the value into the size needed
-  long data = map(val, 0, 255, 0, tft.width()-2);
+  long data = map(val, 0, 255, 0, tft.width()-2); // bar graph
+  float display_data = (map(val, 0, 255, -100, 155)); // convert to MRP Bar
+  display_data = display_data /100;
+  if (val > peak_MRP){ // check peak
+    peak_MRP = val;
+    oldtime = millis();
+  }else if(millis() - oldtime > 2500){
+    peak_MRP = 0;
+  }
+  long pk_data = map(peak_MRP, 0, 255, 0, tft.width()-2); // bar graph
+  float display_pk = (map(peak_MRP, 0, 255, -100, 155)); // convert to MRP Bar
+  display_pk = display_pk/100;
 
   // draw the data
-  tft.fillRect(1      , 31 ,data                , 48, ILI9341_GREEN);
-  tft.fillRect(data+1 , 31 ,tft.width()-2-data  , 48, ILI9341_BLACK);
+  if(display_data < 0 ){ //blue
+    tft.fillRect(1, 31, data, 48, ILI9341_BLUE);
+  }else if(display_data >=0 && display_data <0.9){
+    tft.fillRect(1, 31, data, 48, ILI9341_GREEN);
+  }else if(display_data >=0.9 && display_data <1.1){
+    tft.fillRect(1, 31, data, 48, ILI9341_YELLOW);
+  }else{
+    tft.fillRect(1, 31, data, 48, ILI9341_RED);
+  }
+  tft.fillRect(data+1 , 31, tft.width()-2-data  , 48, ILI9341_BLACK);
+  tft.fillRect(pk_data-1, 31, 2, 48, ILI9341_ORANGE); // peak marker
   //Serial.println(data);
 
-  tft.setCursor(120, 2);
+  // print value
+  tft.setCursor(70, 2);
   tft.setTextColor(ILI9341_WHITE,ILI9341_BLACK);
-  tft.print(val);
-  tft.print("kPa  ");
+  if (display_data >= 0) tft.print(" ");
+  tft.print(display_data);
+
+  // print peak
+  tft.setCursor(170, 2);
+  tft.print("Pk:");
+  if (display_pk >= 0) tft.print(" ");
+  tft.print(display_pk);
+
 }
 
 unsigned long testFillScreen() {
