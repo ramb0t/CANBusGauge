@@ -59,12 +59,15 @@ void setup() {
   tft.drawRect(0, 30, tft.width(), 50, ILI9341_WHITE);
 }
 
-
+uint8_t status;
 void loop(void) {
   uint8_t val_bst;
   if(Serial.available()){
+    status ? status = 0 : status = 1;
     val_bst = Serial.read();
     graph(val_bst);
+    tft.fillCircle(315, 5, 2, status ? ILI9341_WHITE:ILI9341_BLACK);
+
   }
 
 
@@ -91,7 +94,7 @@ void graph(uint8_t val){
   tft.setCursor(120, 2);
   tft.setTextColor(ILI9341_WHITE,ILI9341_BLACK);
   tft.print(val);
-  tft.print("  ");
+  tft.print("kPa  ");
 }
 
 unsigned long testFillScreen() {

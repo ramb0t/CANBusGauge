@@ -27,7 +27,7 @@ void setup() {
   else
     Serial.println("Can't init CAN");
 
-  delay(1000);
+  pinMode(A0, INPUT);
 }
 
 //********************************Main Loop*********************************//
@@ -65,7 +65,7 @@ if (mcp2515_check_message())
           message0.data[0] = 0x03;
           message0.data[1] = 0x41;
           message0.data[2] = 0x0B;
-          message0.data[3] = count++; //formatted in HEX
+          message0.data[3] = map(analogRead(A0), 0, 1023, 0, 255); //formatted in HEX
 
           message0.data[4] = 0x00;
           message0.data[5] = 0x40;
