@@ -28,6 +28,7 @@ void setup() {
     Serial.println("Can't init CAN");
 
   pinMode(A0, INPUT);
+  randomSeed(analogRead(0));
 }
 
 //********************************Main Loop*********************************//
@@ -55,7 +56,8 @@ if (mcp2515_check_message())
                Serial.println("");
              //}
 
-        if(message.id == 0x7DF and message.data[2] == 0x0B)  //uncomment when you want to filter
+        // Boost
+        if(message.id == 0x7DF and message.data[2] == 0x0B)
         {
           tCAN message0;
 
@@ -66,6 +68,48 @@ if (mcp2515_check_message())
           message0.data[1] = 0x41;
           message0.data[2] = 0x0B;
           message0.data[3] = map(analogRead(A0), 0, 1023, 0, 255); //formatted in HEX
+
+          message0.data[4] = 0x00;
+          message0.data[5] = 0x40;
+          message0.data[6] = 0x00;
+          message0.data[7] = 0x00;
+
+          mcp2515_bit_modify(CANCTRL, (1<<REQOP2)|(1<<REQOP1)|(1<<REQOP0), 0);
+          mcp2515_send_message(&message0);
+        }
+        // Timing
+        if(message.id == 0x7DF and message.data[2] == 0x0E)
+        {
+          tCAN message0;
+
+          message0.id = 0x7E8; //formatted in HEX
+          message0.header.rtr = 0;
+          message0.header.length = 4; //formatted in DEC
+          message0.data[0] = 0x03;
+          message0.data[1] = 0x41;
+          message0.data[2] = 0x0E;
+          message0.data[3] = random(255); //formatted in HEX
+
+          message0.data[4] = 0x00;
+          message0.data[5] = 0x40;
+          message0.data[6] = 0x00;
+          message0.data[7] = 0x00;
+
+          mcp2515_bit_modify(CANCTRL, (1<<REQOP2)|(1<<REQOP1)|(1<<REQOP0), 0);
+          mcp2515_send_message(&message0);
+        }
+        // Throttle
+        if(message.id == 0x7DF and message.data[2] == 0x11)
+        {
+          tCAN message0;
+
+          message0.id = 0x7E8; //formatted in HEX
+          message0.header.rtr = 0;
+          message0.header.length = 4; //formatted in DEC
+          message0.data[0] = 0x03;
+          message0.data[1] = 0x41;
+          message0.data[2] = 0x11;
+          message0.data[3] = random(100);//formatted in HEX
 
           message0.data[4] = 0x00;
           message0.data[5] = 0x40;

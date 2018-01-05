@@ -1,5 +1,9 @@
 #include <Arduino.h>
 
+
+//Serial Rx using EasyTransfer lib
+#include <EasyTransfer.h>
+
 /***************************************************
   This is our GFX example for the Adafruit ILI9341 Breakout and Shield
   ----> http://www.adafruit.com/products/1651
@@ -33,6 +37,26 @@
 //Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC, TFT_MOSI, TFT_CLK, TFT_RST, TFT_MISO);
 Adafruit_ILI9341_STM tft = Adafruit_ILI9341_STM(TFT_CS, TFT_DC, TFT_RST); // Use hardware SPI
 
+//Serial Rx setup
+//create object
+EasyTransfer ET;
+
+struct RECEIVE_DATA_STRUCTURE{
+  //put your variable definitions here for the data you want to receive
+  //THIS MUST BE EXACTLY THE SAME ON THE OTHER ARDUINO
+  uint8_t boost;
+  uint8_t throttle;
+  uint8_t injector;
+  uint8_t timing;
+};
+
+//give a name to the group of data
+RECEIVE_DATA_STRUCTURE mydata;
+RECEIVE_DATA_STRUCTURE curr_data;
+
+#define BST_BARX  2
+#define THR_BARX  82
+#define TIM_BARX  152
 
 void setup() {
   Serial.begin(115200);
@@ -51,12 +75,10 @@ void setup() {
   x = tft.readcommand8(ILI9341_RDSELFDIAG);
   Serial.print("Self Diagnostic: 0x"); Serial.println(x, HEX);
 
-  tft.fillScreen(ILI9341_BLACK);
-  tft.setRotation(3);
-  tft.setCursor(2, 2);
-  tft.setTextColor(ILI9341_WHITE);  tft.setTextSize(3);
-  tft.println("Bst:");
-  tft.drawRect(0, 30, tft.width(), 50, ILI9341_WHITE);
+  screen1();
+
+  //start the library, pass in the data details and the name of the serial port. Can be Serial, Serial1, Serial2, etc.
+  ET.begin(details(mydata), &Serial);
 }
 
 // serial debug circle
@@ -64,17 +86,21 @@ uint8_t status;
 
 // main loop
 void loop(void) {
-  uint8_t val_bst;
-  if(Serial.available()){
-
-    val_bst = Serial.read();
+  //check and see if a data packet has come in.
+  if(ET.receiveData()){
+    //this is how you access the variables. [name of the group].[variable name]
+    curr_data = mydata;
+    uint8_t val_bst = curr_data.boost;
     graph_boost(val_bst);
+    graph_throttle(curr_data.throttle);
+    graph_timing(curr_data.timing);
 
     // serial debug circle
     status ? status = 0 : status = 1;
     tft.fillCircle(315, 5, 2, status ? ILI9341_WHITE:ILI9341_BLACK);
-
   }
+
+
 
 
   // while(1){
@@ -85,6 +111,27 @@ void loop(void) {
   //     delay(50);
   //   }
   // }
+
+}
+
+void screen1(){
+  tft.fillScreen(ILI9341_BLACK);
+  tft.setRotation(3);
+
+  tft.setCursor(2, BST_BARX);
+  tft.setTextColor(ILI9341_WHITE);  tft.setTextSize(3);
+  tft.println("Bst:");
+  tft.drawRect(0, BST_BARX+28, tft.width(), 50, ILI9341_WHITE);
+
+  tft.setCursor(2, THR_BARX);
+  tft.setTextColor(ILI9341_WHITE);  tft.setTextSize(2);
+  tft.println("Thr:");
+  tft.drawRect(0, THR_BARX+18, tft.width(), 50, ILI9341_WHITE);
+
+  tft.setCursor(2, TIM_BARX);
+  tft.setTextColor(ILI9341_WHITE);  tft.setTextSize(2);
+  tft.println("Tim:");
+  tft.drawRect(0, TIM_BARX+18, tft.width(), 50, ILI9341_WHITE);
 
 }
 
@@ -130,6 +177,60 @@ void graph_boost(uint8_t val){
   tft.print("Pk:");
   if (display_pk >= 0) tft.print(" ");
   tft.print(display_pk);
+
+}
+
+void graph_throttle(uint8_t val){
+  // map the value into the size needed
+  long data = map(val, 0, 100, 0, tft.width()-2); // bar graph
+  float display_data = val;
+
+
+  // draw the data
+  if(display_data < 0 ){ //blue
+    tft.fillRect(1, THR_BARX+19, data, 48, ILI9341_BLUE);
+  }else if(display_data >=0 && display_data <0.9){
+    tft.fillRect(1, THR_BARX+19, data, 48, ILI9341_GREEN);
+  }else if(display_data >=0.9 && display_data <1.1){
+    tft.fillRect(1, THR_BARX+19, data, 48, ILI9341_YELLOW);
+  }else{
+    tft.fillRect(1, THR_BARX+19, data, 48, ILI9341_RED);
+  }
+  tft.fillRect(data+1 , THR_BARX+19, tft.width()-2-data  , 48, ILI9341_BLACK);
+
+  // print value
+  tft.setCursor(70, THR_BARX);
+  tft.setTextColor(ILI9341_WHITE,ILI9341_BLACK);
+  if (display_data >= 0) tft.print(" ");
+  tft.print(display_data);
+
+}
+
+void graph_timing(uint8_t val){
+  // map the value into the size needed
+  float fval = val;
+  fval = (fval/2)-64 ; // convert to deg btdc
+  long data = map(val, 0, 255, 0, tft.width()-2); // bar graph
+  float display_data = fval;
+
+
+  // draw the data
+  if(display_data < 0 ){ //blue
+    tft.fillRect(1, TIM_BARX+19, data, 48, ILI9341_BLUE);
+  }else if(display_data >=0 && display_data <0.9){
+    tft.fillRect(1, TIM_BARX+19, data, 48, ILI9341_GREEN);
+  }else if(display_data >=0.9 && display_data <1.1){
+    tft.fillRect(1, TIM_BARX+19, data, 48, ILI9341_YELLOW);
+  }else{
+    tft.fillRect(1, TIM_BARX+19, data, 48, ILI9341_RED);
+  }
+  tft.fillRect(data+1 , TIM_BARX+19, tft.width()-2-data  , 48, ILI9341_BLACK);
+
+  // print value
+  tft.setCursor(70, TIM_BARX);
+  tft.setTextColor(ILI9341_WHITE,ILI9341_BLACK);
+  if (display_data >= 0) tft.print(" ");
+  tft.print(display_data);
 
 }
 
