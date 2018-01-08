@@ -1,3 +1,13 @@
+/********************************************************************
+Modified version of https://github.com/togglebit/ArduinoDUE_OBD_FreeRunningCAN/ by Ramb0t
+This example is built upon the CANAcquisition class and the OBDParmameter class using 11bit (non-extended) OBD2 ID's
+
+This example shows how to set up periodic data acquisition of OBD2 paramters based upon
+standard PID's. If you'd like to add another paramter,simply copy one of the definitions and modify it accordingly.
+You may also need to add a new PID to the "OBD_PID" enum in the header file.
+
+/********************************************************************/
+
 #include <Arduino.h>
 
 #include <OBD2.h>
@@ -5,16 +15,7 @@
 
 //Serial Tx using EasyTransfer lib
 #include <EasyTransfer.h>
-/********************************************************************
-This example is built upon the CANAcquisition class and the OBDParmameter class using 11bit (non-extended) OBD2 ID's
 
-This example shows how to set up periodic data acquisition of OBD2 paramters based upon
-standard PID's. If you'd like to add another paramter,simply copy one of the definitions and modify it accordingly.
-You may also need to add a new PID to the "OBD_PID" enum in the header file.
-
-Note as of 8/24/15 this has only been tested on one Toyota vehicle!
-As of July 24, 2017 it has also been tested on a Buick Enclave. Works fine!
-/********************************************************************/
 
 //create the CANport acqisition schedulers
 cAcquireCAN CANport0(CAN_PORT_0);
@@ -33,10 +34,6 @@ cAcquireCAN CANport0(CAN_PORT_0);
   //cOBDParameter OBD_IAT(        "IAT "          , " C"  		,  ENGINE_IAT  , _8BITS,   false ,  CURRENT,  1,    -40,  &CANport0, false);
 
 
-// Serial Tx Struct setup
-//create object
-EasyTransfer ET;
-
 struct SEND_DATA_STRUCTURE{
   //put your variable definitions here for the data you want to send
   //THIS MUST BE EXACTLY THE SAME ON THE OTHER ARDUINO
@@ -46,54 +43,142 @@ struct SEND_DATA_STRUCTURE{
   uint8_t timing;
 };
 
-//Function prototypes
-void PrintScreen();
+// Global Vars
+UINT8 i;
+UINT32 maxTime;
+
+// Serial Tx Struct setup
+//create object
+EasyTransfer ET;
 
 //give a name to the group of data
 SEND_DATA_STRUCTURE mydata;
 
+// Function prototypes
+void InitPins();
+void LED_Cycle();
+void GPIO_On();
+void PrintScreen();
+
+
+//****************************************************************************//
+// Setup Routine
 void setup()
 {
-  pinMode(PS_BUCK, OUTPUT);
-  digitalWrite(PS_BUCK, HIGH);
-
-	//output pin that can be used for debugging purposes
-	pinMode(RGB_GREEN, OUTPUT);
-  pinMode(GPIO1    , OUTPUT);
-  pinMode(I_SENSE_EN, OUTPUT);
-  digitalWrite(GPIO1 , HIGH);
-  digitalWrite(I_SENSE_EN, HIGH);
+  // Init Pins
+  InitPins();
+  digitalWrite(RGB_RED, LOW);
 
 	//start serial port
 	SerialUSB.begin(115200);
-  delay(500); //allow USB time to settle
+  //debugging message for monitor to indicate CPU resets are occuring
+  SerialUSB.println("System Reset");
 
-  //start the second serial
+  //start the second serial, for LCD comms
   Serial3.begin(115200);
-
-	//debugging message for monitor to indicate CPU resets are occuring
-	SerialUSB.println("System Reset");
-  Serial3.println("System Reset");
 
   //start the library, pass in the data details and the name of the serial port. Can be Serial, Serial1, Serial2, etc.
   ET.begin(details(mydata), &Serial3);
 
   //start CAN ports,  enable interrupts and RX masks, set the baud rate here
 	CANport0.initialize(_500K);
+  SerialUSB.println("CAN Bus Init");
 
-  //set up the transmission/reception of messages to occur at 500Hz (2mS) timer interrupt
+  // Turn the LCD on
+  GPIO_On();
+  SerialUSB.println("LCD Backpack Init");
+
+  // Complete Boot Sequence
+  digitalWrite(RGB_RED, HIGH);
+  LED_Cycle();
+  SerialUSB.println("Booted!");
+
+  //set up the transmission/reception of messages to occur at 20Hz
   Timer3.attachInterrupt(PrintScreen).setFrequency(20).start();
 
 }
 
-
-UINT8 i;
-UINT32 maxTime;
-
+//****************************************************************************//
+// Main Loop
 void loop()
 {
-  CANport0.run(POLLING);
+  CANport0.run(POLLING); // run in polling mode
+}
 
+// Simple setup function to init the pins needed
+void InitPins(){
+  // Handy Guide http://docs.macchina.cc/m2/technical-references/pin-mapping.html
+
+  // Activate 12V input buck circut, may not be needed but good measure
+  pinMode(PS_BUCK, OUTPUT);
+  digitalWrite(PS_BUCK, HIGH);
+
+  // LED pins
+  pinMode(RGB_RED,    OUTPUT);
+  pinMode(RGB_GREEN,  OUTPUT);
+  pinMode(RGB_BLUE,   OUTPUT);
+  pinMode(DS2,        OUTPUT); // RED
+  pinMode(DS3,        OUTPUT); // YELLOW
+  pinMode(DS4,        OUTPUT); // YELLOW
+  pinMode(DS5,        OUTPUT); // YELLOW
+  pinMode(DS6,        OUTPUT); // GREEN
+  digitalWrite(RGB_RED,   HIGH);
+  digitalWrite(RGB_GREEN, HIGH);
+  digitalWrite(RGB_BLUE,  HIGH);
+  digitalWrite(DS2,       HIGH);
+  digitalWrite(DS3,       HIGH);
+  digitalWrite(DS4,       HIGH);
+  digitalWrite(DS5,       HIGH);
+  digitalWrite(DS6,       HIGH);
+
+  // GPIO Pins
+  pinMode(GPIO1,      OUTPUT);
+  digitalWrite(GPIO1, LOW);
+
+  // GPIO Power
+  pinMode(I_SENSE_EN, OUTPUT);
+  digitalWrite(I_SENSE_EN, HIGH);
+
+}
+
+// Pretty funtion to cycle LEDs at boot
+void LED_Cycle(){
+  #define CYC_DEL 150
+
+  digitalWrite(DS6, LOW);
+  delay(CYC_DEL);
+  digitalWrite(DS6, HIGH);
+  digitalWrite(DS5, LOW);
+  delay(CYC_DEL);
+  digitalWrite(DS5, HIGH);
+  digitalWrite(DS4, LOW);
+  delay(CYC_DEL);
+  digitalWrite(DS4, HIGH);
+  digitalWrite(DS3, LOW);
+  delay(CYC_DEL);
+  digitalWrite(DS3, HIGH);
+  digitalWrite(DS2, LOW);
+  delay(CYC_DEL);
+  digitalWrite(DS2, HIGH);
+
+  digitalWrite(RGB_RED, LOW);
+  delay(CYC_DEL);
+  digitalWrite(RGB_BLUE, LOW);
+  delay(CYC_DEL);
+  digitalWrite(RGB_GREEN, LOW);
+  delay(CYC_DEL);
+  digitalWrite(RGB_RED, HIGH);
+  delay(CYC_DEL);
+  digitalWrite(RGB_BLUE, HIGH);
+  delay(CYC_DEL);
+  digitalWrite(RGB_GREEN, HIGH);
+
+}
+
+// Turn GPIO output on
+void GPIO_On()
+{
+  digitalWrite(GPIO1, HIGH);
 }
 
 //this is our timer interrupt handler, called at XmS interval
