@@ -16,6 +16,11 @@ You may also need to add a new PID to the "OBD_PID" enum in the header file.
 //Serial Tx using EasyTransfer lib
 #include <EasyTransfer.h>
 
+// Macchina 12V IO Library
+#include <M2_12VIO.h>
+
+M2_12VIO M2IO; //Constructor for the M2_12Vio library
+
 
 //create the CANport acqisition schedulers
 cAcquireCAN CANport0(CAN_PORT_0);
@@ -47,6 +52,11 @@ struct SEND_DATA_STRUCTURE{
 UINT8 i;
 UINT32 maxTime;
 
+uint32_t Time_Delay_endMills = 0;
+uint32_t Time_Delay_startMillis = 0;
+
+float temp = 0;
+
 // Serial Tx Struct setup
 //create object
 EasyTransfer ET;
@@ -57,7 +67,6 @@ SEND_DATA_STRUCTURE mydata;
 // Function prototypes
 void InitPins();
 void LED_Cycle();
-void GPIO_On();
 void PrintScreen();
 
 
@@ -71,6 +80,7 @@ void setup()
 
 	//start serial port
 	SerialUSB.begin(115200);
+  delay(3000);
   //debugging message for monitor to indicate CPU resets are occuring
   SerialUSB.println("System Reset");
 
@@ -85,7 +95,9 @@ void setup()
   SerialUSB.println("CAN Bus Init");
 
   // Turn the LCD on
-  GPIO_On();
+  M2IO.Init_12VIO(); // Initialise the M2I/O library
+  M2IO.Disable_Current_Trip();
+  M2IO.Setpin_12VIO(1, ON);  
   SerialUSB.println("LCD Backpack Init");
 
   // Complete Boot Sequence
@@ -131,14 +143,6 @@ void InitPins(){
   digitalWrite(DS5,       HIGH);
   digitalWrite(DS6,       HIGH);
 
-  // GPIO Pins
-  pinMode(GPIO1,      OUTPUT);
-  digitalWrite(GPIO1, LOW);
-
-  // GPIO Power
-  pinMode(I_SENSE_EN, OUTPUT);
-  digitalWrite(I_SENSE_EN, HIGH);
-
 }
 
 // Pretty funtion to cycle LEDs at boot
@@ -173,12 +177,6 @@ void LED_Cycle(){
   delay(CYC_DEL);
   digitalWrite(RGB_GREEN, HIGH);
 
-}
-
-// Turn GPIO output on
-void GPIO_On()
-{
-  digitalWrite(GPIO1, HIGH);
 }
 
 //this is our timer interrupt handler, called at XmS interval
@@ -217,9 +215,9 @@ void PrintScreen()
 //	SerialUSB.print(OBD_MAF.getData());
 //	SerialUSB.println(OBD_MAF.getUnits());
 
-  SerialUSB.print(OBD_MAP.getName());
-  SerialUSB.print(OBD_MAP.getData());
-  SerialUSB.println(OBD_MAP.getUnits());
+  //SerialUSB.print(OBD_MAP.getName());
+  //SerialUSB.print(OBD_MAP.getData());
+  //SerialUSB.println(OBD_MAP.getUnits());
   mydata.boost = OBD_MAP.getIntData();
 
 
@@ -228,12 +226,42 @@ void PrintScreen()
 //	SerialUSB.print(OBD_IAT.getData());
 //	SerialUSB.println(OBD_IAT.getUnits());
 
-  SerialUSB.println();
+  //SerialUSB.println();
+
+
 
   // send data to display
   digitalWrite(RGB_BLUE, LOW);
   ET.sendData();
   digitalWrite(RGB_BLUE, HIGH);
+
+
+  // Debug info
+
+	if(Time_Delay_endMills >= 1000){
+
+    temp = M2IO.Supply_Volts();
+    SerialUSB.print("\nVehicle Voltage = ");
+    SerialUSB.print(temp/1000);
+    SerialUSB.print("V");
+
+    temp = M2IO.Load_Amps();
+    SerialUSB.print("\nM2 I/O Output Load = ");
+    SerialUSB.print(temp);
+    SerialUSB.print("mA");
+
+    SerialUSB.print("\nOver Current Latch = ");
+    SerialUSB.print(Over_Current_Trip);
+
+    SerialUSB.print("\nChip Temperature ");
+    SerialUSB.print(M2IO.Temperature());
+    SerialUSB.print("C");
+
+    SerialUSB.println();
+    Time_Delay_startMillis = millis();
+	}
+
+  Time_Delay_endMills = millis() - Time_Delay_startMillis; // Time delay between displaying readings
 
   digitalWrite(RGB_GREEN, HIGH);
 }
