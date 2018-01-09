@@ -97,7 +97,7 @@ void setup()
   // Turn the LCD on
   M2IO.Init_12VIO(); // Initialise the M2I/O library
   M2IO.Disable_Current_Trip();
-  M2IO.Setpin_12VIO(1, ON);  
+  M2IO.Setpin_12VIO(1, ON);
   SerialUSB.println("LCD Backpack Init");
 
   // Complete Boot Sequence

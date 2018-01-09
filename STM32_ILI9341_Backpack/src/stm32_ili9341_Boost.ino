@@ -30,6 +30,8 @@
 #define TFT_DC         PA2
 #define TFT_RST        PA1
 
+#define TFT_LED_PWM    PB7
+
 
 // Use hardware SPI (on Uno, #13, #12, #11) and the above for CS/DC
 //Adafruit_ILI9341 tft = Adafruit_ILI9341(TFT_CS, TFT_DC);seo
@@ -59,6 +61,9 @@ RECEIVE_DATA_STRUCTURE curr_data;
 #define TIM_BARX  152
 
 void setup() {
+  pinMode(LED_BUILTIN, OUTPUT);
+  digitalWrite(LED_BUILTIN, LOW);
+
   Serial.begin(115200);
   Serial.println("STM32 LCD Backpack ILI9341");
   tft.begin();
@@ -75,14 +80,21 @@ void setup() {
   x = tft.readcommand8(ILI9341_RDSELFDIAG);
   Serial.print("Self Diagnostic: 0x"); Serial.println(x, HEX);
 
+  // Setup TFT backlight control
+  pinMode(TFT_LED_PWM, OUTPUT);
+  analogWrite(TFT_LED_PWM, 128);
+
   screen1();
 
   //start the library, pass in the data details and the name of the serial port. Can be Serial, Serial1, Serial2, etc.
   ET.begin(details(mydata), &Serial);
+
+  digitalWrite(LED_BUILTIN, HIGH);
 }
 
 // serial debug circle
 uint8_t status;
+uint8_t status_serial;
 
 // main loop
 void loop(void) {
@@ -92,12 +104,18 @@ void loop(void) {
     curr_data = mydata;
     uint8_t val_bst = curr_data.boost;
     graph_boost(val_bst);
-    graph_throttle(curr_data.throttle);
+    //graph_throttle(curr_data.throttle);
     graph_timing(curr_data.timing);
 
     // serial debug circle
     status ? status = 0 : status = 1;
     tft.fillCircle(315, 5, 2, status ? ILI9341_WHITE:ILI9341_BLACK);
+  }
+
+  if(Serial.available()){
+    // serial debug
+    status_serial ? status_serial = 0 : status_serial = 1;
+    status_serial ? digitalWrite(LED_BUILTIN, LOW):digitalWrite(LED_BUILTIN, HIGH);
   }
 
 
